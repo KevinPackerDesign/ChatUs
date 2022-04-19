@@ -6,8 +6,9 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
-import { GiftedChat, Bubble } from "react-native-gifted-chat";
 import AsyncStorage from "@react-native-community/async-storage";
+import { GiftedChat, Bubble, InputToolbar } from "react-native-gifted-chat";
+
 import NetInfo from "@react-native-community/netinfo";
 import * as firebase from "firebase";
 import "firebase/firestore";
@@ -27,13 +28,13 @@ export default class Chat extends React.Component {
     };
 
     const firebaseConfig = {
-      apiKey: "AIzaSyCPoFEaFVodl_NwsTISnPKRS_istGMmdZ0",
-      authDomain: "chatus-a008e.firebaseapp.com",
-      projectId: "chatus-a008e",
-      storageBucket: "chatus-a008e.appspot.com",
-      messagingSenderId: "882617707341",
-      appId: "1:882617707341:web:089ddaaef63581b168e504",
-      measurementId: "G-997K6MYEZF",
+      apiKey: "AIzaSyBr4yau5Da4bWowcQGDXmGwplnaPhm8shE",
+      authDomain: "chatapp-e1ac5.firebaseapp.com",
+      projectId: "chatapp-e1ac5",
+      storageBucket: "chatapp-e1ac5.appspot.com",
+      messagingSenderId: "745622530335",
+      appId: "1:745622530335:web:48a31625cf0a0ea0a3282a",
+      measurementId: "G-30BR6JSJNX",
     };
 
     if (!firebase.apps.length) {
@@ -71,10 +72,25 @@ export default class Chat extends React.Component {
   }
 
   componentDidMount() {
-    this.getMessages();
+    //uses name enter on title at top of chat screen
+    let name = this.props.route.params.name;
+    this.props.navigation.setOptions({ title: name });
+    //checks if the user is online or off
+    NetInfo.fetch().then((connection) => {
+      if (connection.isConnected) {
+        this.setState({ isConnected: true });
+        console.log("online");
+      } else {
+        // the user is offline
+        this.setState({ isConnected: false });
+        console.log("offline");
+        this.getMessages();
+      }
+    });
+
     this.authUnsubscribe = firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) {
-        firebase.auth().signInAnonymously();
+        await firebase.auth().signInAnonymously();
       }
 
       this.setState({
@@ -86,15 +102,8 @@ export default class Chat extends React.Component {
         .orderBy("createdAt", "desc")
         .onSnapshot(this.onCollectionUpdate);
     });
-
-    NetInfo.fetch().then((connection) => {
-      if (connection.isConnected) {
-        console.log("online");
-      } else {
-        console.log("offline");
-      }
-    });
   }
+
   componentWillUnmout() {
     this.authUnsubscribe();
     this.unsubscribe();
@@ -119,6 +128,7 @@ export default class Chat extends React.Component {
       }),
       () => {
         this.saveMessages();
+        this.addMessage(messages[0]);
       }
     );
   }
@@ -169,10 +179,8 @@ export default class Chat extends React.Component {
   }
 
   render() {
-    let name = this.props.route.params.name;
     const { bgColor } = this.props.route.params;
 
-    this.props.navigation.setOptions({ title: name });
     return (
       <View
         style={{
@@ -185,6 +193,7 @@ export default class Chat extends React.Component {
         <GiftedChat
           style={StyleSheet.giftedChat}
           renderBubble={this.renderBubble.bind(this)}
+          renderInputToolbar={this.renderInputToolbar.bind(this)}
           messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
           user={{
