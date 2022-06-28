@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import title from "./components/title";
 import Chat from "./components/Chat";
 import "react-native-gesture-handler";
+import CustomActions from "./components/CustomActions";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import {
@@ -25,6 +26,9 @@ export default class HelloWorld extends Component {
   alertMyText(input = []) {
     Alert.alert(input.text);
   }
+  renderCustomActions = (props) => {
+    return <CustomActions {...props} />;
+  };
 
   render() {
     return (

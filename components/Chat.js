@@ -6,9 +6,10 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
+import CustomActions from "./CustomActions";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GiftedChat, Bubble, InputToolbar } from "react-native-gifted-chat";
-
+import MapView from "react-native-maps";
 import NetInfo from "@react-native-community/netinfo";
 import * as firebase from "firebase";
 import "firebase/firestore";
@@ -25,6 +26,7 @@ export default class Chat extends React.Component {
         avatar: "",
       },
       isConnected: false,
+      location: null,
     };
 
     const firebaseConfig = {
@@ -40,9 +42,6 @@ export default class Chat extends React.Component {
     if (!firebase.apps.length) {
       firebase.initializeApp(firebaseConfig);
     }
-    this.referenceChatMessages = firebase.firestore().collection("messages");
-
-    this.refMsgsUser = null;
   }
 
   onCollectionUpdate = (querySnapshot) => {
@@ -65,7 +64,10 @@ export default class Chat extends React.Component {
     this.setState({
       messages: messages,
     });
+    this.saveMessages();
   };
+
+  renderCustomActions = (props) => <CustomActions {...props} />;
 
   addMessage(message) {
     this.referenceChatMessages.add(message);
@@ -77,6 +79,9 @@ export default class Chat extends React.Component {
       if (connection.isConnected) {
         this.setState({ isConnected: true });
         console.log("online");
+        this.referenceChatMessages = firebase
+          .firestore()
+          .collection("messages");
         // listens for updates in the collection
         this.unsubscribe = this.referenceChatMessages
           .orderBy("createdAt", "desc")
@@ -96,8 +101,6 @@ export default class Chat extends React.Component {
               messages: [],
             });
           });
-        //save messages when online
-        this.saveMessages();
       } else {
         // the user is offline
         this.setState({ isConnected: false });
@@ -182,6 +185,29 @@ export default class Chat extends React.Component {
     }
   }
 
+  renderCustomView(props) {
+    const { currentMessage } = props;
+    if (currentMessage.location) {
+      return (
+        <MapView
+          style={{
+            width: 150,
+            height: 100,
+            borderRadius: 13,
+            margin: 3,
+          }}
+          region={{
+            latitude: currentMessage.location.latitude,
+            longitude: currentMessage.location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        />
+      );
+    }
+    return null;
+  }
+
   render() {
     let { name } = this.props.route.params;
     const { bgColor } = this.props.route.params;
@@ -198,8 +224,10 @@ export default class Chat extends React.Component {
       >
         <GiftedChat
           style={StyleSheet.giftedChat}
+          renderCustomView={this.renderCustomView}
           renderBubble={this.renderBubble.bind(this)}
           renderInputToolbar={this.renderInputToolbar.bind(this)}
+          renderActions={this.renderCustomActions}
           messages={this.state.messages}
           onSend={(messages) => this.onSend(messages)}
           user={{
